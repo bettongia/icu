@@ -23,8 +23,9 @@ Four exports, one import:
 | Windows     | `icu.dll` (Windows 10+)                                           |
 | Web         | Browser `Intl.Segmenter` (Chrome 87+, Firefox 125+, Safari 16.4+) |
 
-`RegExpTokenizer` works on every platform including web.
-`BrowserTokenizer` works on web only — it uses `dart:js_interop` to call the browser's built-in `Intl.Segmenter`.
+`RegExpTokenizer` works on every platform including web. `BrowserTokenizer`
+works on web only — it uses `dart:js_interop` to call the browser's built-in
+`Intl.Segmenter`.
 
 ## Getting started
 
@@ -71,9 +72,9 @@ Arabic, Devanagari, etc.) on a native platform — it delegates word-boundary
 detection to the OS-provided ICU library and conforms to UAX #29.
 
 Use `BrowserTokenizer` on Flutter Web when your text may contain non-Latin
-scripts. It calls `Intl.Segmenter` in the browser's own JavaScript engine,
-which is backed by the same ICU data, with no bundle overhead and no FFI.
-Requires Chrome 87+, Firefox 125+, or Safari 16.4+.
+scripts. It calls `Intl.Segmenter` in the browser's own JavaScript engine, which
+is backed by the same ICU data, with no bundle overhead and no FFI. Requires
+Chrome 87+, Firefox 125+, or Safari 16.4+.
 
 Use `RegExpTokenizer` when you only process English prose or technical
 identifiers and want zero FFI dependencies, or as a fallback on older browsers
@@ -102,12 +103,12 @@ make coverage
 
 ### Test structure
 
-| File                                                                   | What it covers                                                           |
-| ---------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| `test/icu_tokeniser_test.dart`                                         | `IcuTokenizer` contract, UAX #29 behaviour, platform library loading     |
-| `test/regexp_tokeniser_test.dart`                                      | `RegExpTokenizer` contract and edge cases                                |
-| `integration_test_app/integration_test/icu_tokenizer_test.dart`  | `IcuTokenizer` contract and UAX #29 behaviour on Android / iOS          |
-| `test/browser_tokenizer_test.dart`                               | `BrowserTokenizer` contract and UAX #29 behaviour via `Intl.Segmenter`  |
+| File                                                            | What it covers                                                         |
+| --------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `test/icu_tokeniser_test.dart`                                  | `IcuTokenizer` contract, UAX #29 behaviour, platform library loading   |
+| `test/regexp_tokeniser_test.dart`                               | `RegExpTokenizer` contract and edge cases                              |
+| `integration_test_app/integration_test/icu_tokenizer_test.dart` | `IcuTokenizer` contract and UAX #29 behaviour on Android / iOS         |
+| `test/browser_tokenizer_test.dart`                              | `BrowserTokenizer` contract and UAX #29 behaviour via `Intl.Segmenter` |
 
 **Tokenizer contract** — a shared `_tokenizerContractTests` helper runs the same
 invariants (empty input, punctuation stripping, numbers, prose sentences)
@@ -132,7 +133,8 @@ executes the suite.
 | `android` — expects load error         | runs    | skipped | runs    |
 | `fuchsia` — expects `UnsupportedError` | runs    | runs    | runs    |
 
-The `android` test is skipped on Linux because `libicuuc.so` is present there (installed by `libicu-dev`).
+The `android` test is skipped on Linux because `libicuuc.so` is present there
+(installed by `libicu-dev`).
 
 ### Android emulator
 
@@ -188,6 +190,12 @@ The [Containerfile](Containerfile) can be used to test the package on Linux.
 ```sh
 podman build -t betto-icu-cicd .
 podman run --rm betto-icu-cicd
+```
+
+To run the web test:
+
+```sh
+podman run --rm betto-icu-cicd make web_test
 ```
 
 ## License

@@ -1,9 +1,9 @@
 # Stage 1: build addlicense (Go tool used by the license_check target)
-FROM golang:latest AS addlicense-builder
+FROM docker.io/library/golang:latest AS addlicense-builder
 RUN CGO_ENABLED=0 go install github.com/google/addlicense@latest
 
 # Stage 2: Dart runtime with ICU and tooling
-FROM dart:stable
+FROM docker.io/library/dart:stable
 
 COPY --from=addlicense-builder /go/bin/addlicense /usr/local/bin/addlicense
 
@@ -11,13 +11,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     make \
     lcov \
     libicu-dev \
+    chromium \
     && rm -rf /var/lib/apt/lists/*
 
+RUN useradd --create-home --shell /bin/sh runner
+
+ENV HOME=/home/runner
+ENV CHROME_EXECUTABLE=chromium
+
 # dart pub global activate installs binaries here (e.g. coverage's format_coverage)
-ENV PATH="/root/.pub-cache/bin:${PATH}"
+ENV PATH="/home/runner/.pub-cache/bin:${PATH}"
 
-WORKDIR /app
+USER runner
+WORKDIR /home/runner/app
 
-COPY . .
+COPY --chown=runner:runner . .
 
 CMD ["make", "cicd"]

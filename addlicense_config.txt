@@ -14,6 +14,7 @@
 --ignore="**/*.txt"
 --ignore="**/.dart_tool/**"
 --ignore="coverage/**"
+--ignore="doc/**"
 --ignore=".claude/**"
 --ignore="integration_test_app/ios/**"
 --ignore="integration_test_app/android/**"

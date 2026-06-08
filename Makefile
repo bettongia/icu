@@ -40,14 +40,14 @@ ios_test:
 
 # Run BrowserTokenizer tests in Chrome. Requires Chrome to be installed.
 # Usage: make web_test
-web_test:
+web_test: prepare
 	dart test --platform chrome test/browser_tokenizer_test.dart
 .PHONY: web_test
 
 # END: Primary tasks
 
 format:
-	dart format .
+	dart format lib/ test/ bin/
 .PHONY: format
 
 analyze:
