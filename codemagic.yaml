@@ -1,12 +1,6 @@
 workflows:
-
-  # ---------------------------------------------------------------------------
-  # Android integration tests — runs on pushes to main only.
-  # Boots an x86_64 Android 14 emulator, then runs the Flutter integration
-  # test suite from integration_test_app/ against the real Android ICU.
-  # ---------------------------------------------------------------------------
-  android-integration:
-    name: Android Integration Tests
+  flutter-integration-tests:
+    name: Flutter Integration Tests
     instance_type: mac_mini_m2
     triggering:
       events:
@@ -17,52 +11,35 @@ workflows:
     environment:
       flutter: stable
     scripts:
-      - name: Create AVD
+      - name: Install dependencies
         script: |
-          sdkmanager --install "system-images;android-34;google_apis;arm64-v8a" > /dev/null
-          echo "no" | avdmanager create avd --force \
-            --name "ci_avd" \
-            --package "system-images;android-34;google_apis;arm64-v8a"
-      - name: Start emulator
-        script: |
-          $ANDROID_HOME/emulator/emulator \
-            -avd ci_avd \
-            -no-audio \
-            -no-boot-anim \
-            -no-window &
-          timeout 120 adb wait-for-device
-          adb shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 2; done; input keyevent 82'
-      - name: Run integration tests
-        script: make android_test DEVICE=emulator-5554
+          cd integration_test_app
+          flutter pub get
 
-  # ---------------------------------------------------------------------------
-  # iOS integration tests — runs on pushes to main only.
-  # Boots the first available iPhone simulator, then runs the Flutter
-  # integration test suite from integration_test_app/.
-  # ---------------------------------------------------------------------------
-  ios-integration:
-    name: iOS Integration Tests
-    instance_type: mac_mini_m2
-    triggering:
-      events:
-        - push
-      branch_patterns:
-        - pattern: main
-          include: true
-    environment:
-      flutter: stable
-      xcode: latest
-    scripts:
-      - name: Boot iOS simulator
+      - name: Run Android Integration Tests
         script: |
-          UDID=$(xcrun simctl list devices available -j | python3 -c "
-          import json, sys
-          for runtime, devs in json.load(sys.stdin)['devices'].items():
-              for d in devs:
-                  if 'iPhone' in d['name'] and d['isAvailable']:
-                      print(d['udid'])
-                      exit()
-          ")
-          xcrun simctl boot "$UDID"
-      - name: Run integration tests
-        script: make ios_test
+          cd integration_test_app
+
+          # Start the pre-installed Android emulator
+          flutter emulators --launch emulator &
+
+          # Wait for the Android device to be fully ready
+          adb wait-for-device
+
+          # Run your integration tests
+          flutter test integration_test
+
+      - name: Run iOS Integration Tests
+        script: |
+          cd integration_test_app
+
+          # Find an available iOS simulator name
+          IOS_SIMULATOR=$(xcrun simctl list devices available | grep "iPhone" | head -n 1 | sed -E 's/ *([^(]+) \(([^)]+)\).*/\1/')
+          echo "Booting simulator: $IOS_SIMULATOR"
+
+          # Start and wait for the iOS simulator
+          xcrun simctl boot "$IOS_SIMULATOR"
+          xcrun simctl bootstatus "$IOS_SIMULATOR"
+
+          # Run your integration tests
+          flutter test integration_test

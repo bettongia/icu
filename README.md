@@ -2,6 +2,9 @@
 
 Unicode text tokenization for Dart.
 
+[![CI/CD](https://github.com/bettongia/icu/actions/workflows/cicd.yml/badge.svg)](https://github.com/bettongia/icu/actions/workflows/cicd.yml)
+[![Codemagic build status for Android and iOS](https://api.codemagic.io/apps/6a2748d16b80ac5b260f7d52/flutter-integration-tests/status_badge.svg)](https://codemagic.io/app/6a2748d16b80ac5b260f7d52/flutter-integration-tests/latest_build)
+
 Four exports, one import:
 
 | Class              | Description                                                                                                  |
