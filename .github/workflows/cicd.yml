@@ -32,6 +32,15 @@ jobs:
     needs: build
 
     steps:
+      - uses: actions/checkout@v6
+
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y lcov libicu-dev
+
       - run: make web_test
 
   test-windows:
