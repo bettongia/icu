@@ -76,7 +76,7 @@ typedef _UbrkClose = void Function(Pointer<Void> bi);
 /// |-------------|--------------------------------------|
 /// | macOS / iOS | libicucore.dylib  (ships with OS)    |
 /// | Android     | libicuuc.so       (NDK)              |
-/// | Linux       | libicui18n.so.NN  (widely packaged)  |
+/// | Linux       | libicuuc.so.NN    (widely packaged)  |
 /// | Windows     | icu.dll           (Windows 10+)      |
 ///
 /// [platform] defaults to [Platform.operatingSystem]. Pass an explicit value
@@ -95,18 +95,18 @@ DynamicLibrary _openIcuLibrary([String? platform]) {
   }
 
   if (platform == 'linux') {
-    // ubrk_open and other break-iterator symbols live in libicui18n, not
-    // libicuuc, on Linux. The unversioned symlink requires the -dev package;
+    // ubrk_open and other break-iterator symbols live in libicuuc (Common),
+    // not libicui18n. The unversioned symlink requires the -dev package;
     // fall back through versioned names common across distributions.
     const candidates = [
-      'libicui18n.so',
-      'libicui18n.so.76',
-      'libicui18n.so.74',
-      'libicui18n.so.73',
-      'libicui18n.so.72',
-      'libicui18n.so.70',
-      'libicui18n.so.67',
-      'libicui18n.so.66',
+      'libicuuc.so',
+      'libicuuc.so.76',
+      'libicuuc.so.74',
+      'libicuuc.so.73',
+      'libicuuc.so.72',
+      'libicuuc.so.70',
+      'libicuuc.so.67',
+      'libicuuc.so.66',
     ];
     for (final name in candidates) {
       try {
@@ -116,7 +116,7 @@ DynamicLibrary _openIcuLibrary([String? platform]) {
       }
     }
     throw UnsupportedError(
-      'Could not find libicui18n on this Linux system. '
+      'Could not find libicuuc on this Linux system. '
       'Install libicu-dev (Debian/Ubuntu) or icu (Arch/Fedora).',
     );
   }
@@ -139,6 +139,32 @@ DynamicLibrary _openIcuLibrary([String? platform]) {
 }
 
 // ---------------------------------------------------------------------------
+// ICU symbol-suffix resolver
+// ---------------------------------------------------------------------------
+
+/// Returns the version suffix appended to ICU symbols on this system, or `''`.
+///
+/// Some distributions (older Debian/Ubuntu) disable ICU symbol renaming so
+/// `ubrk_open` is exported as-is. Others (Fedora, Debian Trixie+) use ICU's
+/// default renaming, which appends the major version number (e.g. `_76`).
+String _icuSymbolSuffix(DynamicLibrary lib) {
+  const versionsToTry = [0, 76, 75, 74, 73, 72, 71, 70, 68, 67, 66, 65, 64];
+  for (final v in versionsToTry) {
+    final suffix = v == 0 ? '' : '_$v';
+    try {
+      lib.lookup<NativeFunction<_UbrkOpenNative>>('ubrk_open$suffix');
+      return suffix;
+    } catch (_) {
+      // try next
+    }
+  }
+  throw UnsupportedError(
+    'Could not find ubrk_open[_NN] in the loaded ICU library. '
+    'The library may be incomplete or use an unsupported symbol renaming scheme.',
+  );
+}
+
+// ---------------------------------------------------------------------------
 // IcuTokenizer
 // ---------------------------------------------------------------------------
 
@@ -157,7 +183,7 @@ DynamicLibrary _openIcuLibrary([String? platform]) {
 /// |-------------|--------------------------------------|
 /// | macOS / iOS | libicucore.dylib  (ships with OS)    |
 /// | Android     | libicuuc.so       (NDK)              |
-/// | Linux       | libicui18n.so.NN  (widely packaged)  |
+/// | Linux       | libicuuc.so.NN    (widely packaged)  |
 /// | Windows     | icu.dll           (Windows 10+)      |
 ///
 /// ## Platform note — ubrk_getRuleStatus
@@ -186,7 +212,7 @@ class IcuTokenizer implements Tokenizer {
   /// Opens the system ICU library and resolves the FFI symbols.
   ///
   /// Throws [UnsupportedError] if the library cannot be found on this platform.
-  IcuTokenizer() : this._fromLib(_openIcuLibrary());
+  factory IcuTokenizer() => IcuTokenizer._fromLib(_openIcuLibrary());
 
   /// Creates an [IcuTokenizer] that loads the ICU library for [platform].
   ///
@@ -194,16 +220,20 @@ class IcuTokenizer implements Tokenizer {
   /// `'android'`, or `'windows'`. This constructor lets tests exercise each
   /// library-loading branch on a development machine without requiring the
   /// native platform.
-  IcuTokenizer.forPlatform(String platform)
-      : this._fromLib(_openIcuLibrary(platform));
+  factory IcuTokenizer.forPlatform(String platform) =>
+      IcuTokenizer._fromLib(_openIcuLibrary(platform));
 
-  IcuTokenizer._fromLib(DynamicLibrary lib)
-    : _lib = lib,
-      _ubrkOpen = lib.lookupFunction<_UbrkOpenNative, _UbrkOpen>('ubrk_open'),
-      _ubrkNext = lib.lookupFunction<_UbrkNextNative, _UbrkNext>('ubrk_next'),
-      _ubrkClose = lib.lookupFunction<_UbrkCloseNative, _UbrkClose>(
-        'ubrk_close',
-      );
+  factory IcuTokenizer._fromLib(DynamicLibrary lib) {
+    final s = _icuSymbolSuffix(lib);
+    return IcuTokenizer._(
+      lib,
+      lib.lookupFunction<_UbrkOpenNative, _UbrkOpen>('ubrk_open$s'),
+      lib.lookupFunction<_UbrkNextNative, _UbrkNext>('ubrk_next$s'),
+      lib.lookupFunction<_UbrkCloseNative, _UbrkClose>('ubrk_close$s'),
+    );
+  }
+
+  IcuTokenizer._(this._lib, this._ubrkOpen, this._ubrkNext, this._ubrkClose);
 
   // Matches any Unicode letter or digit — used to classify ICU spans.
   //

@@ -122,6 +122,15 @@ executes the suite.
 | `android` — expects load error         | runs    | runs    | runs    |
 | `fuchsia` — expects `UnsupportedError` | runs    | runs    | runs    |
 
+### Linux container
+
+The [Containerfile](Containerfile) can be used to test the package on Linux.
+
+```sh
+podman build -t betto-icu-cicd .
+podman run --rm betto-icu-cicd
+```
+
 ## License
 
 Apache 2.0 — see [LICENSE](LICENSE).

@@ -151,6 +151,8 @@ void _platformLoadingTests() {
       },
       skip: Platform.isAndroid
           ? 'covered by IcuTokenizer() on Android hosts'
+          : Platform.isLinux
+          ? 'libicuuc.so is present on Linux hosts'
           : null,
     );
 
