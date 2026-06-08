@@ -26,5 +26,10 @@
 library;
 
 export 'src/tokenizer.dart' show Tokenizer;
-export 'src/icu_tokenizer.dart' show IcuTokenizer;
 export 'src/regexp_tokenizer.dart' show RegExpTokenizer;
+export 'src/icu_tokenizer_stub.dart'
+    if (dart.library.ffi) 'src/icu_tokenizer.dart'
+    show IcuTokenizer;
+export 'src/browser_tokenizer_stub.dart'
+    if (dart.library.js_interop) 'src/browser_tokenizer.dart'
+    show BrowserTokenizer;

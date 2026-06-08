@@ -26,3 +26,41 @@ jobs:
           echo "$HOME/go/bin" >> "$GITHUB_PATH"
 
       - run: make cicd
+
+      - run: make web_test
+
+  test-windows:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Install addlicense
+        shell: bash
+        run: |
+          go install github.com/google/addlicense@latest
+          echo "$HOME/go/bin" >> "$GITHUB_PATH"
+
+      - run: make cicd-windows
+
+  test-macos:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Install addlicense
+        shell: bash
+        run: |
+          go install github.com/google/addlicense@latest
+          echo "$HOME/go/bin" >> "$GITHUB_PATH"
+
+      - run: make cicd-macos

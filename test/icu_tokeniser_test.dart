@@ -126,7 +126,9 @@ void _platformLoadingTests() {
           throwsA(isA<UnsupportedError>()),
         );
       },
-      skip: Platform.isLinux ? 'covered by IcuTokenizer() on Linux hosts' : null,
+      skip: Platform.isLinux
+          ? 'covered by IcuTokenizer() on Linux hosts'
+          : null,
     );
 
     test(

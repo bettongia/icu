@@ -133,9 +133,7 @@ DynamicLibrary _openIcuLibrary([String? platform]) {
     throw UnsupportedError('Could not find ICU DLL on this Windows system.');
   }
 
-  throw UnsupportedError(
-    'IcuTokenizer is not supported on $platform.',
-  );
+  throw UnsupportedError('IcuTokenizer is not supported on $platform.');
 }
 
 // ---------------------------------------------------------------------------

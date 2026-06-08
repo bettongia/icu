@@ -2,13 +2,14 @@
 
 Unicode text tokenization for Dart.
 
-Three exports, one import:
+Four exports, one import:
 
-| Class             | Description                                                                                                  |
-| ----------------- | ------------------------------------------------------------------------------------------------------------ |
-| `Tokenizer`       | Abstract segmentation interface                                                                              |
-| `IcuTokenizer`    | UAX #29 word boundaries via the system ICU FFI library. Handles non-Latin scripts (CJK, Thai, Arabic, etc.). |
-| `RegExpTokenizer` | Pure-Dart, Latin/English fallback using `RegExp`. Zero FFI dependencies.                                     |
+| Class              | Description                                                                                                  |
+| ------------------ | ------------------------------------------------------------------------------------------------------------ |
+| `Tokenizer`        | Abstract segmentation interface                                                                              |
+| `IcuTokenizer`     | UAX #29 word boundaries via the system ICU FFI library. Handles non-Latin scripts (CJK, Thai, Arabic, etc.). |
+| `RegExpTokenizer`  | Pure-Dart, Latin/English fallback using `RegExp`. Zero FFI dependencies.                                     |
+| `BrowserTokenizer` | UAX #29 word boundaries via the browser's `Intl.Segmenter` API. Web only; zero bundle cost.                  |
 
 ## Platform support
 
@@ -20,8 +21,10 @@ Three exports, one import:
 | Android     | `libicuuc.so` (NDK)                                               |
 | Linux       | `libicuuc.so.NN` (widely packaged; install `libicu-dev` or `icu`) |
 | Windows     | `icu.dll` (Windows 10+)                                           |
+| Web         | Browser `Intl.Segmenter` (Chrome 87+, Firefox 125+, Safari 16.4+) |
 
 `RegExpTokenizer` works on every platform including web.
+`BrowserTokenizer` works on web only — it uses `dart:js_interop` to call the browser's built-in `Intl.Segmenter`.
 
 ## Getting started
 
@@ -64,12 +67,17 @@ dart run bin/tokenize.dart "The Strange Case of Dr. Jekyll and Mr. Hyde"
 ### Choosing an implementation
 
 Use `IcuTokenizer` when your text may contain non-Latin scripts (CJK, Thai,
-Arabic, Devanagari, etc.) — it delegates word-boundary detection to the
-OS-provided ICU library and conforms to UAX #29.
+Arabic, Devanagari, etc.) on a native platform — it delegates word-boundary
+detection to the OS-provided ICU library and conforms to UAX #29.
+
+Use `BrowserTokenizer` on Flutter Web when your text may contain non-Latin
+scripts. It calls `Intl.Segmenter` in the browser's own JavaScript engine,
+which is backed by the same ICU data, with no bundle overhead and no FFI.
+Requires Chrome 87+, Firefox 125+, or Safari 16.4+.
 
 Use `RegExpTokenizer` when you only process English prose or technical
-identifiers and want zero FFI dependencies (e.g. on web targets where `dart:ffi`
-is unavailable).
+identifiers and want zero FFI dependencies, or as a fallback on older browsers
+that don't support `Intl.Segmenter`.
 
 ### ubrk_getRuleStatus note (macOS / iOS)
 
@@ -94,10 +102,12 @@ make coverage
 
 ### Test structure
 
-| File                              | What it covers                                                       |
-| --------------------------------- | -------------------------------------------------------------------- |
-| `test/icu_tokeniser_test.dart`    | `IcuTokenizer` contract, UAX #29 behaviour, platform library loading |
-| `test/regexp_tokeniser_test.dart` | `RegExpTokenizer` contract and edge cases                            |
+| File                                                                   | What it covers                                                           |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `test/icu_tokeniser_test.dart`                                         | `IcuTokenizer` contract, UAX #29 behaviour, platform library loading     |
+| `test/regexp_tokeniser_test.dart`                                      | `RegExpTokenizer` contract and edge cases                                |
+| `integration_test_app/integration_test/icu_tokenizer_test.dart`  | `IcuTokenizer` contract and UAX #29 behaviour on Android / iOS          |
+| `test/browser_tokenizer_test.dart`                               | `BrowserTokenizer` contract and UAX #29 behaviour via `Intl.Segmenter`  |
 
 **Tokenizer contract** — a shared `_tokenizerContractTests` helper runs the same
 invariants (empty input, punctuation stripping, numbers, prose sentences)
@@ -119,8 +129,57 @@ executes the suite.
 | `ios` — loads `libicucore.dylib`       | runs    | skipped | skipped |
 | `linux` — expects `UnsupportedError`   | runs    | skipped | runs    |
 | `windows` — expects `UnsupportedError` | runs    | runs    | skipped |
-| `android` — expects load error         | runs    | runs    | runs    |
+| `android` — expects load error         | runs    | skipped | runs    |
 | `fuchsia` — expects `UnsupportedError` | runs    | runs    | runs    |
+
+The `android` test is skipped on Linux because `libicuuc.so` is present there (installed by `libicu-dev`).
+
+### Android emulator
+
+The `integration_test_app/` directory contains a minimal Flutter app that runs
+the full contract and UAX #29 test suite on a real Android runtime via
+[`package:integration_test`](https://pub.dev/packages/integration_test).
+
+Prerequisites: Flutter SDK and a running emulator (or connected device).
+
+```sh
+# list available devices
+flutter devices
+
+# run against the default device
+make android_test
+
+# or target a specific emulator
+make android_test DEVICE=emulator-5554
+```
+
+### iOS simulator
+
+The same `integration_test_app/` runs on an iOS simulator or physical device.
+ICU on iOS comes from Apple's `libicucore.dylib`, which ships with the OS and
+exports symbols without version renaming.
+
+Prerequisites: Xcode and a booted simulator (or connected device).
+
+```sh
+# list available devices
+flutter devices
+
+# run against the default device
+make ios_test
+
+# or target a specific simulator
+make ios_test DEVICE="iPhone 16 Pro"
+```
+
+### Web browser
+
+`BrowserTokenizer` tests live in the main package and run with `dart test`,
+which launches Chrome directly — no WebDriver server required.
+
+```sh
+make web_test
+```
 
 ### Linux container
 
