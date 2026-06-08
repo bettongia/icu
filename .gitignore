@@ -1,0 +1,17 @@
+# Dart/pub build artefacts
+.dart_tool/
+.packages
+build/
+pubspec.lock
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Coverage
+coverage/
+lcov.info
+
+# Dart doc
+doc/
