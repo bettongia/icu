@@ -76,7 +76,7 @@ typedef _UbrkClose = void Function(Pointer<Void> bi);
 /// |-------------|--------------------------------------|
 /// | macOS / iOS | libicucore.dylib  (ships with OS)    |
 /// | Android     | libicuuc.so       (NDK)              |
-/// | Linux       | libicuuc.so.NN    (widely packaged)  |
+/// | Linux       | libicui18n.so.NN  (widely packaged)  |
 /// | Windows     | icu.dll           (Windows 10+)      |
 ///
 /// [platform] defaults to [Platform.operatingSystem]. Pass an explicit value
@@ -95,17 +95,18 @@ DynamicLibrary _openIcuLibrary([String? platform]) {
   }
 
   if (platform == 'linux') {
-    // The unversioned symlink (libicuuc.so) requires the -dev package.
-    // Try versioned names common across distributions.
+    // ubrk_open and other break-iterator symbols live in libicui18n, not
+    // libicuuc, on Linux. The unversioned symlink requires the -dev package;
+    // fall back through versioned names common across distributions.
     const candidates = [
-      'libicuuc.so',
-      'libicuuc.so.76',
-      'libicuuc.so.74',
-      'libicuuc.so.73',
-      'libicuuc.so.72',
-      'libicuuc.so.70',
-      'libicuuc.so.67',
-      'libicuuc.so.66',
+      'libicui18n.so',
+      'libicui18n.so.76',
+      'libicui18n.so.74',
+      'libicui18n.so.73',
+      'libicui18n.so.72',
+      'libicui18n.so.70',
+      'libicui18n.so.67',
+      'libicui18n.so.66',
     ];
     for (final name in candidates) {
       try {
@@ -115,7 +116,7 @@ DynamicLibrary _openIcuLibrary([String? platform]) {
       }
     }
     throw UnsupportedError(
-      'Could not find libicuuc on this Linux system. '
+      'Could not find libicui18n on this Linux system. '
       'Install libicu-dev (Debian/Ubuntu) or icu (Arch/Fedora).',
     );
   }
@@ -156,7 +157,7 @@ DynamicLibrary _openIcuLibrary([String? platform]) {
 /// |-------------|--------------------------------------|
 /// | macOS / iOS | libicucore.dylib  (ships with OS)    |
 /// | Android     | libicuuc.so       (NDK)              |
-/// | Linux       | libicuuc.so.NN    (widely packaged)  |
+/// | Linux       | libicui18n.so.NN  (widely packaged)  |
 /// | Windows     | icu.dll           (Windows 10+)      |
 ///
 /// ## Platform note — ubrk_getRuleStatus
