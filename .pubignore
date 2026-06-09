@@ -1,0 +1,8 @@
+.claude
+.dart-tool
+build/
+coverage/
+doc/
+integration_test_app/.dart_tool
+integration_test_app/.idea
+integration_test_app/build

@@ -1,8 +1,8 @@
 name: betto_icu
 description: >
-  Unicode text tokenization for Dart — Tokenizer interface, IcuTokenizer
-  (system ICU FFI, UAX #29), and RegExpTokenizer (pure Dart, Latin fallback).
-version: 0.1.0
+  Unicode text tokenization for Dart — Tokenizer interface, IcuTokenizer (system
+  ICU FFI, UAX #29), and RegExpTokenizer (pure Dart, Latin fallback).
+version: 0.1.0-dev.1
 repository: https://github.com/bettongia/icu
 issue_tracker: https://github.com/bettongia/icu/issues
 
