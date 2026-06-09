@@ -14,11 +14,11 @@ default: clean prepare license_check format analyze test coverage doc
 cicd: default
 .PHONY: cicd
 
-cicd-windows: prepare test
-.PHONY: cicd-windows
+cicd_windows: prepare test
+.PHONY: cicd_windows
 
-cicd-macos: prepare test
-.PHONY: cicd-macos
+cicd_macos: prepare test
+.PHONY: cicd_macos
 
 example:
 	dart run example/betto_icu_example.dart

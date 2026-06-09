@@ -11,35 +11,13 @@ workflows:
     environment:
       flutter: stable
     scripts:
-      - name: Install dependencies
-        script: |
-          cd integration_test_app
-          flutter pub get
-
       - name: Run iOS Integration Tests
         script: |
-          cd integration_test_app
-
-          # Find an available iOS simulator name
-          IOS_SIMULATOR=$(xcrun simctl list devices available | grep "iPhone" | head -n 1 | sed -E 's/ *([^(]+) \(([^)]+)\).*/\1/')
-          echo "Booting simulator: $IOS_SIMULATOR"
-
-          # Start and wait for the iOS simulator
-          xcrun simctl boot "$IOS_SIMULATOR"
-          xcrun simctl bootstatus "$IOS_SIMULATOR"
-
-          # Run your integration tests
-          flutter test integration_test
+          make emulator_ios_create
+          make ios_test
 
       - name: Run Android Integration Tests
         script: |
-          cd integration_test_app
-
-          # Start the pre-installed Android emulator
-          flutter emulators --launch emulator &
-
-          # Wait for the Android device to be fully ready
-          adb wait-for-device
-
-          # Run your integration tests
-          flutter test integration_test
+          export ADB_BINARY_PATH=/usr/local/share/android-sdk
+          make emulator_android_create
+          make android_test

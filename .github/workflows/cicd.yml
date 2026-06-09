@@ -54,7 +54,7 @@ jobs:
         with:
           sdk: stable
 
-      - run: make cicd-windows
+      - run: make cicd_windows
 
   test-macos:
     runs-on: macos-latest
@@ -67,4 +67,4 @@ jobs:
         with:
           sdk: stable
 
-      - run: make cicd-macos
+      - run: make cicd_macos
