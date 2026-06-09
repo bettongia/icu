@@ -10,12 +10,14 @@ make
 
 # Individual steps
 make prepare        # dart pub global activate coverage && dart pub get
-make format         # dart format .
+make format         # dart format lib/ test/ bin/
 make analyze        # dart analyze
 make test           # dart test (native platforms only — excludes browser)
 make coverage       # dart test --coverage-path=coverage/lcov.info + genhtml
 make license_check  # addlicense --check (Apache 2.0 header enforcement)
 make license_add    # add missing Apache 2.0 headers
+make doc            # dart doc
+make example        # dart run example/betto_icu_example.dart
 
 # Run a single test file
 dart test test/icu_tokeniser_test.dart
@@ -27,12 +29,27 @@ dart test --name "CJK characters are returned as tokens"
 make web_test       # dart test --platform chrome test/browser_tokenizer_test.dart
 
 # Mobile integration tests (requires Flutter + emulator/device)
-make android_test [DEVICE=emulator-5554]
-make ios_test [DEVICE="iPhone 16 Pro"]
+make android_test   # launches EMULATOR_ANDROID, waits for device, runs tests
+make ios_test       # boots EMULATOR_IOS simulator, runs tests
+
+# Emulator management
+make emulator_android_create   # flutter emulators --create --name $EMULATOR_ANDROID
+make emulator_ios_create       # xcrun simctl create $EMULATOR_IOS $EMULATOR_IOS_DEVICE $EMULATOR_IOS_RUNTIME
+make emulators_stop            # kills Android emulator and shuts down iOS simulator
 
 # Linux container (replicates CI)
 podman build -t betto-icu-cicd . && podman run --rm betto-icu-cicd
 ```
+
+### Makefile environment variables
+
+| Variable              | Default                              | Purpose                                      |
+|-----------------------|--------------------------------------|----------------------------------------------|
+| `ADB_BINARY_PATH`     | `~/Library/Android/sdk/platform-tools` | Path to `adb`                              |
+| `EMULATOR_ANDROID`    | `android-emulator`                   | Android emulator name for `flutter emulators` |
+| `EMULATOR_IOS`        | `ios-emulator`                       | iOS simulator name for `xcrun simctl`        |
+| `EMULATOR_IOS_DEVICE` | `iPhone 17`                          | Device type for `emulator_ios_create`        |
+| `EMULATOR_IOS_RUNTIME`| `iOS26.5`                            | Runtime for `emulator_ios_create`            |
 
 ## Architecture
 
@@ -60,10 +77,11 @@ Each class has a real implementation file and a stub file. The stub throws `Unsu
 
 ### ICU FFI specifics (`lib/src/icu_tokenizer.dart`)
 
-- `_openIcuLibrary()` tries platform-appropriate library names with fallthrough candidates (e.g. `libicuuc.so.76`, `.74`, `.73` …)
-- `_icuSymbolSuffix()` probes for `ubrk_open` vs `ubrk_open_76` etc., because Debian Trixie+ and Fedora rename ICU symbols with the major version suffix
-- `ubrk_getRuleStatus()` is **not used** for span classification because Apple's `libicucore` does not export UAX #29 rule-status tags; instead a `\p{L}\p{N}` `RegExp` classifies spans — this is portable across all platforms
-- The FFI bindings are resolved once at construction; each `tokenise()` call allocates a temporary native UTF-16 buffer via `calloc` and frees it in a `finally` block
+- `_openIcuLibrary()` tries platform-appropriate library names with fallthrough candidates (e.g. `libicuuc.so.76`, `.74`, `.73` …). On Windows, only `icu.dll` and `icuuc.dll` are tried — Windows does not use version-suffixed DLL names.
+- `_icuSymbolSuffix()` probes for `ubrk_open` vs `ubrk_open_76` etc., because Debian Trixie+ and Fedora rename ICU symbols with the major version suffix. Probes versions 76 down to 64 (including 69).
+- `ubrk_getRuleStatus()` is **not used** for span classification because Apple's `libicucore` does not export UAX #29 rule-status tags; instead a `\p{L}\p{N}` `RegExp` classifies spans — this is portable across all platforms.
+- The FFI bindings are resolved once at construction; each `tokenise()` call allocates a temporary native UTF-16 buffer via `calloc` and frees it in a `finally` block.
+- `_checkStatus` is a `static` method — it uses no instance state.
 
 ### Test structure
 

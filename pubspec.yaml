@@ -3,7 +3,15 @@ description: >
   Unicode text tokenization for Dart — Tokenizer interface, IcuTokenizer
   (system ICU FFI, UAX #29), and RegExpTokenizer (pure Dart, Latin fallback).
 version: 0.1.0
-homepage: https://github.com/bettongia/icu
+repository: https://github.com/bettongia/icu
+issue_tracker: https://github.com/bettongia/icu/issues
+
+topics:
+  - text
+  - unicode
+  - nlp
+  - tokenizer
+  - icu
 
 environment:
   sdk: ^3.12.0

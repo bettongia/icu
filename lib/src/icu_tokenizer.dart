@@ -122,7 +122,7 @@ DynamicLibrary _openIcuLibrary([String? platform]) {
   }
 
   if (platform == 'windows') {
-    const candidates = ['icu.dll', 'icuuc.dll', 'icuuc74.dll', 'icuuc70.dll'];
+    const candidates = ['icu.dll', 'icuuc.dll'];
     for (final name in candidates) {
       try {
         return DynamicLibrary.open(name);
@@ -146,7 +146,7 @@ DynamicLibrary _openIcuLibrary([String? platform]) {
 /// `ubrk_open` is exported as-is. Others (Fedora, Debian Trixie+) use ICU's
 /// default renaming, which appends the major version number (e.g. `_76`).
 String _icuSymbolSuffix(DynamicLibrary lib) {
-  const versionsToTry = [0, 76, 75, 74, 73, 72, 71, 70, 68, 67, 66, 65, 64];
+  const versionsToTry = [0, 76, 75, 74, 73, 72, 71, 70, 69, 68, 67, 66, 65, 64];
   for (final v in versionsToTry) {
     final suffix = v == 0 ? '' : '_$v';
     try {
@@ -262,8 +262,9 @@ class IcuTokenizer implements Tokenizer {
 
     try {
       // Copy the Dart string's UTF-16 code units into native memory.
-      // Dart strings are encoded as UTF-16 internally; codeUnits gives the
-      // correct uint16_t values for BMP characters (the common case).
+      // Dart strings are UTF-16 encoded; codeUnits gives the correct uint16_t
+      // values for all characters, including supplementary characters encoded
+      // as surrogate pairs.
       for (var i = 0; i < len; i++) {
         textBuf[i] = codeUnits[i];
       }
@@ -318,7 +319,7 @@ class IcuTokenizer implements Tokenizer {
   ///   < 0  warnings (non-fatal — e.g. U_USING_DEFAULT_WARNING = -127)
   ///   = 0  U_ZERO_ERROR (success)
   ///   > 0  errors (fatal — e.g. U_ILLEGAL_ARGUMENT_ERROR = 1)
-  void _checkStatus(int statusCode, String fn) {
+  static void _checkStatus(int statusCode, String fn) {
     if (statusCode > 0) {
       throw StateError('ICU error in $fn: UErrorCode $statusCode');
     }

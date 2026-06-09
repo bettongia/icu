@@ -148,14 +148,9 @@ the full contract and UAX #29 test suite on a real Android runtime via
 Prerequisites: Flutter SDK and a running emulator (or connected device).
 
 ```sh
-# list available devices
-flutter devices
-
-# run against the default device
+make emulator_android_create
 make android_test
-
-# or target a specific emulator
-make android_test DEVICE=emulator-5554
+make emulators_stop_android
 ```
 
 ### iOS simulator
@@ -167,14 +162,9 @@ exports symbols without version renaming.
 Prerequisites: Xcode and a booted simulator (or connected device).
 
 ```sh
-# list available devices
-flutter devices
-
-# run against the default device
+make emulator_ios_create
 make ios_test
-
-# or target a specific simulator
-make ios_test DEVICE="iPhone 16 Pro"
+make emulators_stop_ios
 ```
 
 ### Web browser
@@ -191,14 +181,7 @@ make web_test
 The [Containerfile](Containerfile) can be used to test the package on Linux.
 
 ```sh
-podman build -t betto-icu-cicd .
-podman run --rm betto-icu-cicd
-```
-
-To run the web test:
-
-```sh
-podman run --rm betto-icu-cicd make web_test
+make container_test
 ```
 
 ## License

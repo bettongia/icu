@@ -39,7 +39,7 @@ jobs:
           sdk: stable
 
       - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y lcov libicu-dev
+        run: sudo apt-get update && sudo apt-get install -y lcov
 
       - run: make web_test
 

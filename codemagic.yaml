@@ -16,19 +16,6 @@ workflows:
           cd integration_test_app
           flutter pub get
 
-      - name: Run Android Integration Tests
-        script: |
-          cd integration_test_app
-
-          # Start the pre-installed Android emulator
-          flutter emulators --launch emulator &
-
-          # Wait for the Android device to be fully ready
-          adb wait-for-device
-
-          # Run your integration tests
-          flutter test integration_test
-
       - name: Run iOS Integration Tests
         script: |
           cd integration_test_app
@@ -40,6 +27,19 @@ workflows:
           # Start and wait for the iOS simulator
           xcrun simctl boot "$IOS_SIMULATOR"
           xcrun simctl bootstatus "$IOS_SIMULATOR"
+
+          # Run your integration tests
+          flutter test integration_test
+
+      - name: Run Android Integration Tests
+        script: |
+          cd integration_test_app
+
+          # Start the pre-installed Android emulator
+          flutter emulators --launch emulator &
+
+          # Wait for the Android device to be fully ready
+          adb wait-for-device
 
           # Run your integration tests
           flutter test integration_test

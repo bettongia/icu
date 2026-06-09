@@ -23,4 +23,11 @@ void main() {
 
   final re = RegExpTokenizer();
   print('RegExpTokenizer: ${re.tokenise(text)}');
+
+  // On web targets, BrowserTokenizer provides UAX #29 quality segmentation
+  // via the browser's built-in Intl.Segmenter API — zero bundle cost, no FFI.
+  // Requires Chrome 87+, Firefox 125+, or Safari 16.4+.
+  //
+  //   final browser = BrowserTokenizer();
+  //   print('BrowserTokenizer: ${browser.tokenise(text)}');
 }
