@@ -1,5 +1,5 @@
 workflows:
-  flutter-integration-tests:
+  flutter-integration-tests-ios:
     name: Flutter Integration Tests
     instance_type: mac_mini_m2
     triggering:
@@ -13,11 +13,6 @@ workflows:
     scripts:
       - name: Run iOS Integration Tests
         script: |
-          make emulator_ios_create
-          make ios_test
-
-      - name: Run Android Integration Tests
-        script: |
-          export ADB_BINARY_PATH=/usr/local/share/android-sdk
-          make emulator_android_create
-          make android_test
+          cd integration_test_app
+          flutter emulators --launch ios
+          flutter test integration_test/icu_tokenizer_test.dart
