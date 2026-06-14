@@ -15,3 +15,8 @@ lcov.info
 
 # Dart doc
 doc/
+
+# Bettongia standard ignores
+.claude
+api-docs/
+site/

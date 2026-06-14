@@ -3,6 +3,8 @@
 build/
 coverage/
 doc/
+docs/
 integration_test_app/.dart_tool
 integration_test_app/.idea
 integration_test_app/build
+site/
