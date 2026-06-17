@@ -1,5 +1,7 @@
 .DEFAULT_GOAL := default
 
+include site.mk
+
 export ADB_BINARY_PATH ?= ~/Library/Android/sdk/platform-tools
 export EMULATOR_ANDROID ?= android-emulator
 export EMULATOR_IOS ?= ios-emulator
@@ -8,7 +10,7 @@ export EMULATOR_IOS_RUNTIME ?= iOS26.5
 
 # BEGIN: Primary tasks
 
-default: clean prepare license_check format analyze test coverage site
+default: clean prepare license_check format analyze test coverage doc_site
 .PHONY: default
 
 cicd: default
@@ -122,33 +124,7 @@ coverage.log: lib/** test/**
 	mkdir -p site/coverage
 	genhtml coverage/lcov.info -o site/coverage
 
-# BEGIN: Documentation site tasks
-site/:
-	mkdir -p site
 
-site: styles site/index.html site/spec.html site/roadmap.html site/api/index.html coverage | site/
-.PHONY: site
-
-styles: site/styles/styles.css
-.PHONY: styles
-
-site/index.html:  docs/index.md docs/.pandoc docs/template/header.html | site/
-	pandoc --defaults="docs/.pandoc" docs/index.md README.md -o "site/index.html";
-
-site/spec.html:  docs/spec/*.md docs/template/header.html | site/
-	pandoc --defaults="docs/spec/.pandoc" --mathml docs/spec/*.md -o "site/spec.html";
-
-site/roadmap.html: docs/roadmap/*.md docs/.pandoc docs/template/header.html | site/
-	pandoc --defaults="docs/.pandoc" docs/roadmap/v*.md -o "site/roadmap.html";
-
-site/styles/styles.css: docs/styles/styles.css | site/
-	mkdir -p site/styles/
-	cp docs/styles/styles.css site/styles/styles.css
-
-site/api/index.html:
-	dart doc -o site/api/index.html
-
-# END: Documentation site tasks
 
 prepare:
 	dart pub global activate coverage
@@ -158,4 +134,5 @@ prepare:
 clean:
 	rm -rf coverage
 	rm -rf doc
+	rm -rf site
 .PHONY: clean

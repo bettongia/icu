@@ -5,6 +5,6 @@ list-of-tables: true
 list-of-figures: true
 number-sections: true
 include-before-body: docs/template/header.html
-embed-resources: true
+embed-resources: false
 css:
-  - docs/styles/styles.css
+  - bettongia-docs.css

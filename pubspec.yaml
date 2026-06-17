@@ -5,6 +5,7 @@ description: >
 version: 0.1.0-dev.2
 repository: https://github.com/bettongia/icu
 issue_tracker: https://github.com/bettongia/icu/issues
+homepage: https://bettongia.github.io/icu/
 
 topics:
   - text
