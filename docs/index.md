@@ -1,12 +1,10 @@
 ---
-title: betto_icu
-subtitle: TODO
+title: $name$
+subtitle: $description$
 toc-title: "Contents"
+abstract:
+  _Some links won't work in this site - please consult the project repository
+  for the [full documentation set]($repo$)._
+
+abstract-title: Note
 ...
-
-- [Specification](spec.html)
-- [Roadmap](roadmap.html)
-- [API](api-docs/index.html)
-- [Coverage](coverage/html/index.html)
-
----
