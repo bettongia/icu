@@ -35,7 +35,7 @@ import 'tokenizer.dart';
 /// print(tokenizer.tokenise('')); // []
 /// print(tokenizer.tokenise('mTLS handshake')); // ['mTLS', 'handshake']
 /// ```
-class RegExpTokenizer implements Tokenizer {
+class RegExpTokenizer implements OffsetTokenizer {
   /// Creates a new [RegExpTokenizer].
   const RegExpTokenizer();
 
@@ -57,6 +57,15 @@ class RegExpTokenizer implements Tokenizer {
     return _wordPattern
         .allMatches(text)
         .map((m) => m.group(0)!)
+        .toList(growable: false);
+  }
+
+  @override
+  List<TokenSpan> tokeniseSpans(String text) {
+    if (text.isEmpty) return const [];
+    return _wordPattern
+        .allMatches(text)
+        .map((m) => TokenSpan(m.group(0)!, m.start, m.end))
         .toList(growable: false);
   }
 }

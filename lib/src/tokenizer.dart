@@ -55,3 +55,56 @@ abstract interface class Tokenizer {
   /// An empty [text] must return an empty list without error.
   List<String> tokenise(String text);
 }
+
+/// A tokenised word span together with its character offsets in the
+/// original text.
+///
+/// [start] is inclusive and [end] is exclusive, both measured in UTF-16 code
+/// units — i.e. Dart `String` index space, matching [String.substring] (so
+/// `text.substring(span.start, span.end) == span.text` always holds).
+final class TokenSpan {
+  /// Creates a [TokenSpan].
+  const TokenSpan(this.text, this.start, this.end);
+
+  /// The token's text — identical to what [Tokenizer.tokenise] would have
+  /// returned for this span.
+  final String text;
+
+  /// The inclusive start offset of this token in the source text.
+  final int start;
+
+  /// The exclusive end offset of this token in the source text.
+  final int end;
+
+  @override
+  String toString() => 'TokenSpan($text, $start, $end)';
+
+  @override
+  bool operator ==(Object other) =>
+      other is TokenSpan &&
+      other.text == text &&
+      other.start == start &&
+      other.end == end;
+
+  @override
+  int get hashCode => Object.hash(text, start, end);
+}
+
+/// A [Tokenizer] that can also report each token's position in the source
+/// text.
+///
+/// Implemented by [IcuTokenizer] and [RegExpTokenizer] — position data is a
+/// natural byproduct of both algorithms' underlying implementation (ICU's
+/// break iterator and [RegExp] matches both already carry span boundaries).
+/// Not implemented by [BrowserTokenizer]: `Intl.Segmenter`'s JS result does
+/// carry a comparable `index` field, but no consumer needs offsets from the
+/// web tokenizer today — left as a documented future extension rather than
+/// implemented speculatively.
+abstract interface class OffsetTokenizer implements Tokenizer {
+  /// Segments [text] into word tokens with their character offsets.
+  ///
+  /// Equivalent to [tokenise] but additionally reporting each token's
+  /// `(start, end)` span. An empty [text] must return an empty list without
+  /// error.
+  List<TokenSpan> tokeniseSpans(String text);
+}

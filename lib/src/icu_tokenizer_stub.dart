@@ -20,7 +20,7 @@ import 'tokenizer.dart';
 /// conditional import on targets where `dart:ffi` is available (native
 /// platforms). On web this stub is used and throws [UnsupportedError] at
 /// construction time. Use [BrowserTokenizer] on web instead.
-class IcuTokenizer implements Tokenizer {
+class IcuTokenizer implements OffsetTokenizer {
   IcuTokenizer() {
     throw UnsupportedError(
       'IcuTokenizer requires dart:ffi and is not available on web. '
@@ -37,5 +37,9 @@ class IcuTokenizer implements Tokenizer {
 
   @override
   List<String> tokenise(String text) =>
+      throw UnsupportedError('IcuTokenizer is not available on web targets.');
+
+  @override
+  List<TokenSpan> tokeniseSpans(String text) =>
       throw UnsupportedError('IcuTokenizer is not available on web targets.');
 }

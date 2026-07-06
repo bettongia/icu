@@ -166,7 +166,8 @@ String _icuSymbolSuffix(DynamicLibrary lib) {
 // IcuTokenizer
 // ---------------------------------------------------------------------------
 
-/// A [Tokenizer] backed by the ICU C library's UBRK_WORD break iterator.
+/// An [OffsetTokenizer] backed by the ICU C library's UBRK_WORD break
+/// iterator.
 ///
 /// Conforms to UAX #29 Unicode Text Segmentation and handles non-Latin scripts
 /// (CJK, Thai, Arabic, etc.) correctly. This is the preferred implementation
@@ -193,12 +194,13 @@ String _icuSymbolSuffix(DynamicLibrary lib) {
 /// Boundary *positions* from the ICU iterator are correct on all platforms.
 ///
 /// Construct once and reuse — the FFI bindings are resolved at construction
-/// time. Each call to [tokenise] allocates a temporary native UTF-16 buffer
-/// and releases it before returning.
+/// time. Each call to [tokeniseSpans] (which [tokenise] delegates to)
+/// allocates a temporary native UTF-16 buffer and releases it before
+/// returning.
 ///
 /// Throws [UnsupportedError] if the ICU library cannot be found or if the
 /// required symbols are absent.
-class IcuTokenizer implements Tokenizer {
+class IcuTokenizer implements OffsetTokenizer {
   // Retain the DynamicLibrary reference to prevent the OS from unloading the
   // library while this tokenizer is alive.
   // ignore: unused_field
@@ -250,7 +252,11 @@ class IcuTokenizer implements Tokenizer {
   static final _trailingNonWord = RegExp(r'[^\p{L}\p{N}]+$', unicode: true);
 
   @override
-  List<String> tokenise(String text) {
+  List<String> tokenise(String text) =>
+      tokeniseSpans(text).map((s) => s.text).toList(growable: false);
+
+  @override
+  List<TokenSpan> tokeniseSpans(String text) {
     if (text.isEmpty) return const [];
 
     final codeUnits = text.codeUnits;
@@ -282,7 +288,7 @@ class IcuTokenizer implements Tokenizer {
       _checkStatus(statusBuf.value, 'ubrk_open');
 
       try {
-        final tokens = <String>[];
+        final spans = <TokenSpan>[];
         var start = 0;
 
         while (true) {
@@ -292,18 +298,33 @@ class IcuTokenizer implements Tokenizer {
           final span = text.substring(start, end);
 
           // Include the span only if it contains at least one letter or digit.
-          // Then strip any punctuation that was grouped at either end.
+          // Then strip any punctuation that was grouped at either end,
+          // tracking exactly how many characters were trimmed from each side
+          // so the reported offsets describe the trimmed word, not the raw
+          // ICU span. `_leadingNonWord`/`_trailingNonWord` are anchored
+          // (`^`/`$`), so `firstMatch` finds precisely what `replaceFirst`
+          // would have removed.
           if (_hasWordChar.hasMatch(span)) {
-            final word = span
-                .replaceFirst(_leadingNonWord, '')
-                .replaceFirst(_trailingNonWord, '');
-            if (word.isNotEmpty) tokens.add(word);
+            final leadingTrim = _leadingNonWord.firstMatch(span)?.end ?? 0;
+            final trailingMatch = _trailingNonWord.firstMatch(span);
+            final trailingTrim = trailingMatch == null
+                ? 0
+                : span.length - trailingMatch.start;
+            final word = span.substring(
+              leadingTrim,
+              span.length - trailingTrim,
+            );
+            if (word.isNotEmpty) {
+              spans.add(
+                TokenSpan(word, start + leadingTrim, end - trailingTrim),
+              );
+            }
           }
 
           start = end;
         }
 
-        return tokens;
+        return spans;
       } finally {
         _ubrkClose(bi);
       }

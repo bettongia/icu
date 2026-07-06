@@ -14,9 +14,12 @@
 
 /// Unicode text tokenization for Dart.
 ///
-/// Provides three exports:
+/// Provides these exports:
 ///
 /// - [Tokenizer] — the abstract segmentation interface.
+/// - [OffsetTokenizer] — a [Tokenizer] that also reports each token's
+///   character offsets in the source text ([TokenSpan]). Implemented by
+///   [IcuTokenizer] and [RegExpTokenizer].
 /// - [IcuTokenizer] — UAX #29 word boundaries via the system ICU FFI library.
 ///   Handles non-Latin scripts (CJK, Thai, Arabic, etc.). Preferred for
 ///   multi-language use cases.
@@ -25,7 +28,7 @@
 ///   identifiers.
 library;
 
-export 'src/tokenizer.dart' show Tokenizer;
+export 'src/tokenizer.dart' show OffsetTokenizer, TokenSpan, Tokenizer;
 export 'src/regexp_tokenizer.dart' show RegExpTokenizer;
 export 'src/icu_tokenizer_stub.dart'
     if (dart.library.ffi) 'src/icu_tokenizer.dart'

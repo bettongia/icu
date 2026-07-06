@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.0-dev.2
+
+### Added
+
+- `OffsetTokenizer` — a `Tokenizer` that also reports each token's character
+  offsets in the source text via `tokeniseSpans()`, returning `TokenSpan`
+  (`text`, `start`, `end`). Implemented by `IcuTokenizer` and
+  `RegExpTokenizer` — position data is a natural byproduct of both
+  algorithms' underlying implementation. Not implemented by
+  `BrowserTokenizer`. `tokenise()` on both implementations is now defined in
+  terms of `tokeniseSpans()`, with no change in behaviour.
+
 ## 0.1.0-dev.1
 
 Initial release.
