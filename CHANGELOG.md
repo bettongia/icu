@@ -1,8 +1,8 @@
 # Changelog
 
-## 0.1.0-dev.3
+## 0.1.0
 
-In progress
+Stable release. Moved to Dart 3.13
 
 ## 0.1.0-dev.2
 

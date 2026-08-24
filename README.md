@@ -36,7 +36,7 @@ dependencies:
   betto_icu: ^0.1.0
 ```
 
-Requires Dart SDK `^3.12.0`.
+Requires Dart SDK `^3.13.0`.
 
 ## Usage
 

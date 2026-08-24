@@ -5,8 +5,8 @@ toc-title: "Contents"
 ...
 
 - **Package:** `betto_icu`
-- **Version:** 0.1.0-dev.2
-- **Dart SDK:** `^3.12.0`
+- **Version:** 0.1.0
+- **Dart SDK:** `^3.13.0`
 - **License:** Apache 2.0
 
 # Purpose and scope
@@ -27,13 +27,13 @@ tokenizer, not by this package.
 
 ## Design goals
 
-| Goal | Rationale |
-|---|---|
-| UAX #29 compliance | Correct word boundaries for CJK, Thai, Arabic, and other non-Latin scripts require a Unicode Text Segmentation implementation, not a regular expression. |
-| No bundled ICU data | ICU ships with every major operating system and every major browser. Bundling a copy would add several megabytes to app size unnecessarily. |
-| Identical public API across platforms | Callers select the tokenizer at construction time; the segmentation call is `tokenise(String)` on every target. |
-| Fail-loud on wrong platform | Constructing an implementation unavailable on the current platform throws `UnsupportedError` immediately rather than silently returning incorrect results. |
-| Zero Flutter dependency | The package is pure Dart. Flutter integration tests live in a separate `integration_test_app/` directory and are not part of the published package. |
+| Goal                                  | Rationale                                                                                                                                                  |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| UAX #29 compliance                    | Correct word boundaries for CJK, Thai, Arabic, and other non-Latin scripts require a Unicode Text Segmentation implementation, not a regular expression.   |
+| No bundled ICU data                   | ICU ships with every major operating system and every major browser. Bundling a copy would add several megabytes to app size unnecessarily.                |
+| Identical public API across platforms | Callers select the tokenizer at construction time; the segmentation call is `tokenise(String)` on every target.                                            |
+| Fail-loud on wrong platform           | Constructing an implementation unavailable on the current platform throws `UnsupportedError` immediately rather than silently returning incorrect results. |
+| Zero Flutter dependency               | The package is pure Dart. Flutter integration tests live in a separate `integration_test_app/` directory and are not part of the published package.        |
 
 # Public API
 
@@ -60,8 +60,8 @@ configuration. The sole method contract:
 ## `IcuTokenizer`
 
 FFI-backed implementation using the OS-provided ICU break-iterator library.
-Available on native platforms (`dart:ffi` present). Throws `UnsupportedError`
-at construction time on web.
+Available on native platforms (`dart:ffi` present). Throws `UnsupportedError` at
+construction time on web.
 
 ```dart
 // Default constructor — loads the system ICU library for the current platform.
@@ -118,10 +118,10 @@ Android, Linux, Windows) and false on web. The condition
 implementation has a corresponding stub file that satisfies the type system on
 the platform where the real implementation is unavailable:
 
-| Platform | `IcuTokenizer` source | `BrowserTokenizer` source |
-|---|---|---|
-| Native | `icu_tokenizer.dart` (real) | `browser_tokenizer_stub.dart` (throws) |
-| Web | `icu_tokenizer_stub.dart` (throws) | `browser_tokenizer.dart` (real) |
+| Platform | `IcuTokenizer` source              | `BrowserTokenizer` source              |
+| -------- | ---------------------------------- | -------------------------------------- |
+| Native   | `icu_tokenizer.dart` (real)        | `browser_tokenizer_stub.dart` (throws) |
+| Web      | `icu_tokenizer_stub.dart` (throws) | `browser_tokenizer.dart` (real)        |
 
 `RegExpTokenizer` is compiled unconditionally on all platforms; it has no stub.
 
@@ -133,12 +133,12 @@ that the compiler accepts call sites on both platforms. The stubs throw
 
 ## ICU library location by platform
 
-| Platform | Library name | Notes |
-|---|---|---|
-| macOS / iOS | `libicucore.dylib` | Ships with the OS; a single monolithic library. |
-| Android | `libicuuc.so` | Provided by the NDK at the stable ABI. |
-| Linux | `libicuuc.so` → `libicuuc.so.76` → `.74` → `.73` → `.72` → `.70` → `.67` → `.66` | Unversioned symlink requires the `-dev` package; fallback through versioned names covers Debian, Ubuntu, Arch, and Fedora. |
-| Windows | `icu.dll` → `icuuc.dll` | Bundled with Windows 10+. |
+| Platform    | Library name                                                                     | Notes                                                                                                                      |
+| ----------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| macOS / iOS | `libicucore.dylib`                                                               | Ships with the OS; a single monolithic library.                                                                            |
+| Android     | `libicuuc.so`                                                                    | Provided by the NDK at the stable ABI.                                                                                     |
+| Linux       | `libicuuc.so` → `libicuuc.so.76` → `.74` → `.73` → `.72` → `.70` → `.67` → `.66` | Unversioned symlink requires the `-dev` package; fallback through versioned names covers Debian, Ubuntu, Arch, and Fedora. |
+| Windows     | `icu.dll` → `icuuc.dll`                                                          | Bundled with Windows 10+.                                                                                                  |
 
 `_openIcuLibrary()` iterates the candidate list for each platform. On macOS and
 Android there is only one name; on Linux and Windows the function tries each
@@ -149,30 +149,29 @@ message.
 ## ICU symbol-suffix resolution
 
 Some Linux distributions (Debian Trixie+, Fedora) compile ICU with symbol
-renaming enabled, exporting `ubrk_open` as `ubrk_open_76` (where `76` is the
-ICU major version). Older distributions and Apple's `libicucore` export the
-symbols without a version suffix.
+renaming enabled, exporting `ubrk_open` as `ubrk_open_76` (where `76` is the ICU
+major version). Older distributions and Apple's `libicucore` export the symbols
+without a version suffix.
 
 After the library is loaded, `_icuSymbolSuffix()` probes for `ubrk_open`
 followed by `ubrk_open_NN` for versions 76 down to 64 (inclusive). It returns
 the first suffix for which the lookup succeeds. The returned suffix is then
-appended to `ubrk_open`, `ubrk_next`, and `ubrk_close` when the FFI bindings
-are resolved.
+appended to `ubrk_open`, `ubrk_next`, and `ubrk_close` when the FFI bindings are
+resolved.
 
 ## FFI bindings
 
 Three ICU functions are bound:
 
-| C function | Dart binding | Purpose |
-|---|---|---|
-| `ubrk_open(type, locale, text, len, status)` | `_UbrkOpen` | Allocate a `UBreakIterator` for word-boundary analysis (`UBRK_WORD = 2`). |
-| `ubrk_next(bi)` | `_UbrkNext` | Advance to the next boundary; returns the byte offset or `UBRK_DONE` (−1). |
-| `ubrk_close(bi)` | `_UbrkClose` | Release the iterator. |
+| C function                                   | Dart binding | Purpose                                                                    |
+| -------------------------------------------- | ------------ | -------------------------------------------------------------------------- |
+| `ubrk_open(type, locale, text, len, status)` | `_UbrkOpen`  | Allocate a `UBreakIterator` for word-boundary analysis (`UBRK_WORD = 2`).  |
+| `ubrk_next(bi)`                              | `_UbrkNext`  | Advance to the next boundary; returns the byte offset or `UBRK_DONE` (−1). |
+| `ubrk_close(bi)`                             | `_UbrkClose` | Release the iterator.                                                      |
 
 The bindings are resolved once at construction time via
-`DynamicLibrary.lookupFunction`. The `DynamicLibrary` reference is stored as
-a field to prevent the OS from unloading the library while the tokenizer is
-alive.
+`DynamicLibrary.lookupFunction`. The `DynamicLibrary` reference is stored as a
+field to prevent the OS from unloading the library while the tokenizer is alive.
 
 ## `tokenise` call sequence
 
@@ -186,8 +185,8 @@ alive.
 4. Call `ubrk_open(UBRK_WORD, nullptr, buf, len, &status)`. Passing `nullptr`
    for the locale selects ICU's root locale, which is sufficient for
    script-level word-boundary rules.
-5. Check `status`: ICU `UErrorCode` values `< 0` are non-fatal warnings;
-   `= 0` is success; `> 0` are fatal errors that raise `StateError`.
+5. Check `status`: ICU `UErrorCode` values `< 0` are non-fatal warnings; `= 0`
+   is success; `> 0` are fatal errors that raise `StateError`.
 6. Iterate with `ubrk_next` until it returns `UBRK_DONE`. Each call returns the
    end offset of the next span; the start offset of each span is the end offset
    of the previous one (beginning at zero).
@@ -206,11 +205,11 @@ alive.
 
 UAX #29 defines rule-status codes that classify each span as a word, number,
 kana, ideo, or non-word boundary. The standard ICU API exposes these codes via
-`ubrk_getRuleStatus()`. This package does not use that function because
-Apple's `libicucore` does not include the UAX #29 rule-status tags in its
-compiled word break rules: the function returns `0` for all spans regardless of
-content, making it impossible to distinguish word spans from whitespace spans on
-macOS and iOS.
+`ubrk_getRuleStatus()`. This package does not use that function because Apple's
+`libicucore` does not include the UAX #29 rule-status tags in its compiled word
+break rules: the function returns `0` for all spans regardless of content,
+making it impossible to distinguish word spans from whitespace spans on macOS
+and iOS.
 
 Instead, span classification uses a Dart `RegExp` with the Unicode flag:
 
@@ -284,11 +283,11 @@ non-empty locale wraps it in a single-element array.
 
 ## Browser compatibility
 
-| Browser | Minimum version |
-|---|---|
-| Chrome / Chromium | 87 |
-| Firefox | 125 |
-| Safari | 16.4 |
+| Browser           | Minimum version |
+| ----------------- | --------------- |
+| Chrome / Chromium | 87              |
+| Firefox           | 125             |
+| Safari            | 16.4            |
 
 All three browsers use V8, SpiderMonkey, or JavaScriptCore respectively, each
 with a bundled ICU library. The `Intl.Segmenter` API exposes that ICU data
@@ -300,50 +299,50 @@ through a standard interface, so the word-breaking quality is equivalent to
 The following table summarises which tokenizer is available on each compilation
 target:
 
-| Target | `IcuTokenizer` | `RegExpTokenizer` | `BrowserTokenizer` |
-|---|---|---|---|
-| macOS | ✓ (libicucore.dylib) | ✓ | ✗ (UnsupportedError) |
-| iOS | ✓ (libicucore.dylib) | ✓ | ✗ |
-| Android | ✓ (libicuuc.so) | ✓ | ✗ |
-| Linux | ✓ (libicuuc.so.NN) | ✓ | ✗ |
-| Windows | ✓ (icu.dll) | ✓ | ✗ |
-| Web | ✗ (UnsupportedError) | ✓ | ✓ (Intl.Segmenter) |
+| Target  | `IcuTokenizer`       | `RegExpTokenizer` | `BrowserTokenizer`   |
+| ------- | -------------------- | ----------------- | -------------------- |
+| macOS   | ✓ (libicucore.dylib) | ✓                 | ✗ (UnsupportedError) |
+| iOS     | ✓ (libicucore.dylib) | ✓                 | ✗                    |
+| Android | ✓ (libicuuc.so)      | ✓                 | ✗                    |
+| Linux   | ✓ (libicuuc.so.NN)   | ✓                 | ✗                    |
+| Windows | ✓ (icu.dll)          | ✓                 | ✗                    |
+| Web     | ✗ (UnsupportedError) | ✓                 | ✓ (Intl.Segmenter)   |
 
 # Build system
 
-The `Makefile` at the repository root defines all development and CI tasks.
-The full pipeline is:
+The `Makefile` at the repository root defines all development and CI tasks. The
+full pipeline is:
 
 ```
 make clean prepare license_check format analyze test coverage site
 ```
 
-| Target | Command | Description |
-|---|---|---|
-| `prepare` | `dart pub global activate coverage && dart pub get` | Activates the `coverage` tool and resolves dependencies. |
-| `license_check` | `addlicense --check` via `addlicense_config.txt` | Verifies Apache 2.0 headers on all `.dart` files. Exits non-zero if any file is missing a header. |
-| `license_add` | `addlicense` via `addlicense_config.txt` | Adds missing Apache 2.0 headers in-place. |
-| `format` | `dart format lib/ test/ bin/` | Reformats source files. |
-| `format_check` | `dart format --output=none --set-exit-if-changed …` | Verifies formatting without modifying files. |
-| `analyze` | `dart analyze` | Runs the Dart static analyser. |
-| `test` | `dart test` | Runs all native platform tests. |
-| `web_test` | `dart test --platform chrome test/browser_tokenizer_test.dart` | Runs the browser tokenizer test suite in Chrome. |
-| `coverage` | `dart test --coverage-path=coverage/lcov.info && genhtml …` | Collects line coverage and renders HTML into `site/coverage/`. |
-| `doc` | `dart doc -o site/api/index.html` | Generates API documentation. |
-| `site` | Runs `styles`, `site/index.html`, `site/spec.html`, `site/roadmap.html`, `site/api/index.html`, `coverage` | Builds the full documentation site under `site/`. |
-| `android_test` | `flutter test integration_test/…` on emulator | Integration tests on Android. |
-| `ios_test` | `flutter test integration_test/…` on simulator | Integration tests on iOS. |
-| `container_test` | `podman build … && podman run …` | Linux CI replica via container. |
+| Target           | Command                                                                                                    | Description                                                                                       |
+| ---------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `prepare`        | `dart pub global activate coverage && dart pub get`                                                        | Activates the `coverage` tool and resolves dependencies.                                          |
+| `license_check`  | `addlicense --check` via `addlicense_config.txt`                                                           | Verifies Apache 2.0 headers on all `.dart` files. Exits non-zero if any file is missing a header. |
+| `license_add`    | `addlicense` via `addlicense_config.txt`                                                                   | Adds missing Apache 2.0 headers in-place.                                                         |
+| `format`         | `dart format lib/ test/ bin/`                                                                              | Reformats source files.                                                                           |
+| `format_check`   | `dart format --output=none --set-exit-if-changed …`                                                        | Verifies formatting without modifying files.                                                      |
+| `analyze`        | `dart analyze`                                                                                             | Runs the Dart static analyser.                                                                    |
+| `test`           | `dart test`                                                                                                | Runs all native platform tests.                                                                   |
+| `web_test`       | `dart test --platform chrome test/browser_tokenizer_test.dart`                                             | Runs the browser tokenizer test suite in Chrome.                                                  |
+| `coverage`       | `dart test --coverage-path=coverage/lcov.info && genhtml …`                                                | Collects line coverage and renders HTML into `site/coverage/`.                                    |
+| `doc`            | `dart doc -o site/api/index.html`                                                                          | Generates API documentation.                                                                      |
+| `site`           | Runs `styles`, `site/index.html`, `site/spec.html`, `site/roadmap.html`, `site/api/index.html`, `coverage` | Builds the full documentation site under `site/`.                                                 |
+| `android_test`   | `flutter test integration_test/…` on emulator                                                              | Integration tests on Android.                                                                     |
+| `ios_test`       | `flutter test integration_test/…` on simulator                                                             | Integration tests on iOS.                                                                         |
+| `container_test` | `podman build … && podman run …`                                                                           | Linux CI replica via container.                                                                   |
 
 ## Environment variables
 
-| Variable | Default | Purpose |
-|---|---|---|
-| `ADB_BINARY_PATH` | `~/Library/Android/sdk/platform-tools` | Path to `adb`. |
-| `EMULATOR_ANDROID` | `android-emulator` | Flutter emulator name for Android tests. |
-| `EMULATOR_IOS` | `ios-emulator` | `xcrun simctl` simulator name for iOS tests. |
-| `EMULATOR_IOS_DEVICE` | `iPhone 17` | Device type passed to `emulator_ios_create`. |
-| `EMULATOR_IOS_RUNTIME` | `iOS26.5` | Runtime identifier passed to `emulator_ios_create`. |
+| Variable               | Default                                | Purpose                                             |
+| ---------------------- | -------------------------------------- | --------------------------------------------------- |
+| `ADB_BINARY_PATH`      | `~/Library/Android/sdk/platform-tools` | Path to `adb`.                                      |
+| `EMULATOR_ANDROID`     | `android-emulator`                     | Flutter emulator name for Android tests.            |
+| `EMULATOR_IOS`         | `ios-emulator`                         | `xcrun simctl` simulator name for iOS tests.        |
+| `EMULATOR_IOS_DEVICE`  | `iPhone 17`                            | Device type passed to `emulator_ios_create`.        |
+| `EMULATOR_IOS_RUNTIME` | `iOS26.5`                              | Runtime identifier passed to `emulator_ios_create`. |
 
 ## License header enforcement
 
@@ -358,12 +357,12 @@ a file with a missing header blocks the entire build.
 
 The GitHub Actions workflow (`.github/workflows/cicd.yml`) defines four jobs:
 
-| Job | Runner | Targets |
-|---|---|---|
-| `build` | `ubuntu-latest` | `make cicd` — full pipeline including coverage and docs |
-| `test-web` | `ubuntu-latest` | `make web_test` — browser tokenizer in Chrome (depends on `build`) |
-| `test-windows` | `windows-latest` | `make cicd_windows` — `dart pub get && dart test` |
-| `test-macos` | `macos-latest` | `make cicd_macos` — `dart pub get && dart test` |
+| Job            | Runner           | Targets                                                            |
+| -------------- | ---------------- | ------------------------------------------------------------------ |
+| `build`        | `ubuntu-latest`  | `make cicd` — full pipeline including coverage and docs            |
+| `test-web`     | `ubuntu-latest`  | `make web_test` — browser tokenizer in Chrome (depends on `build`) |
+| `test-windows` | `windows-latest` | `make cicd_windows` — `dart pub get && dart test`                  |
+| `test-macos`   | `macos-latest`   | `make cicd_macos` — `dart pub get && dart test`                    |
 
 The Linux job installs `libicu-dev` (which provides `libicuuc.so.NN`) and `lcov`
 (required for `genhtml`). The macOS job relies on `libicucore.dylib` present in
@@ -394,11 +393,11 @@ make container_test
 
 ## Native unit tests (`test/`)
 
-| File | Tokenizer under test | Key coverage |
-|---|---|---|
-| `test/icu_tokeniser_test.dart` | `IcuTokenizer`, `RegExpTokenizer` | Tokenizer contract, UAX #29 specifics, platform library loading |
-| `test/regexp_tokeniser_test.dart` | `RegExpTokenizer` | Contract, edge cases, technical identifiers |
-| `test/browser_tokenizer_test.dart` | `BrowserTokenizer` | Contract, UAX #29, locale constructors (browser platform only) |
+| File                               | Tokenizer under test              | Key coverage                                                    |
+| ---------------------------------- | --------------------------------- | --------------------------------------------------------------- |
+| `test/icu_tokeniser_test.dart`     | `IcuTokenizer`, `RegExpTokenizer` | Tokenizer contract, UAX #29 specifics, platform library loading |
+| `test/regexp_tokeniser_test.dart`  | `RegExpTokenizer`                 | Contract, edge cases, technical identifiers                     |
+| `test/browser_tokenizer_test.dart` | `BrowserTokenizer`                | Contract, UAX #29, locale constructors (browser platform only)  |
 
 ### Tokenizer contract
 
@@ -444,14 +443,14 @@ invokes the corresponding branch of `_openIcuLibrary`. This constructor exists
 solely to allow the library-loading code paths to be exercised on any host
 machine:
 
-| Test scenario | Expected outcome | Skipped on |
-|---|---|---|
-| `forPlatform('linux')` on non-Linux | `UnsupportedError` — all `libicuuc.so.NN` variants fail | Linux (covered by default constructor) |
-| `forPlatform('windows')` on non-Windows | `UnsupportedError` — no `icu.dll` or `icuuc.dll` | Windows |
-| `forPlatform('android')` on non-Android, non-Linux | Any error — `libicuuc.so` is absent | Android; Linux (libicuuc.so present via libicu-dev) |
-| `forPlatform('macos')` on non-Apple | Any error — `libicucore.dylib` is absent | macOS and iOS |
-| `forPlatform('ios')` on macOS | Succeeds — `libicucore.dylib` is the same library | non-macOS |
-| `forPlatform('fuchsia')` | `UnsupportedError` — no branch for Fuchsia | — |
+| Test scenario                                      | Expected outcome                                        | Skipped on                                          |
+| -------------------------------------------------- | ------------------------------------------------------- | --------------------------------------------------- |
+| `forPlatform('linux')` on non-Linux                | `UnsupportedError` — all `libicuuc.so.NN` variants fail | Linux (covered by default constructor)              |
+| `forPlatform('windows')` on non-Windows            | `UnsupportedError` — no `icu.dll` or `icuuc.dll`        | Windows                                             |
+| `forPlatform('android')` on non-Android, non-Linux | Any error — `libicuuc.so` is absent                     | Android; Linux (libicuuc.so present via libicu-dev) |
+| `forPlatform('macos')` on non-Apple                | Any error — `libicucore.dylib` is absent                | macOS and iOS                                       |
+| `forPlatform('ios')` on macOS                      | Succeeds — `libicucore.dylib` is the same library       | non-macOS                                           |
+| `forPlatform('fuchsia')`                           | `UnsupportedError` — no branch for Fuchsia              | —                                                   |
 
 The cross-skip logic ensures that every branch is exercised on every CI runner
 without a branch being exercised on the platform where it is the default (and
@@ -481,9 +480,9 @@ runtime:
 - iOS: `libicucore.dylib` ships with the OS; no additional configuration is
   needed in `Runner.xcodeproj`.
 
-The integration test file mirrors the contract and UAX #29 tests from the
-native test suite. Running the tests on device confirms that the FFI bindings
-work against the runtime ICU version and that the symbol-suffix probe resolves
+The integration test file mirrors the contract and UAX #29 tests from the native
+test suite. Running the tests on device confirms that the FFI bindings work
+against the runtime ICU version and that the symbol-suffix probe resolves
 correctly.
 
 ```sh
@@ -498,8 +497,8 @@ make ios_test
 
 # Memory management
 
-Each call to `IcuTokenizer.tokenise` allocates native memory for the UTF-16
-text buffer and the ICU error-code cell using `calloc` from `package:ffi`. Both
+Each call to `IcuTokenizer.tokenise` allocates native memory for the UTF-16 text
+buffer and the ICU error-code cell using `calloc` from `package:ffi`. Both
 allocations are freed unconditionally in a nested `finally` block:
 
 ```
@@ -527,15 +526,15 @@ this efficiently.
 
 # Error handling
 
-| Condition | Thrown type | Message |
-|---|---|---|
-| No ICU library found on Linux | `UnsupportedError` | Includes the package name to install (`libicu-dev` / `icu`). |
-| No ICU DLL found on Windows | `UnsupportedError` | Generic Windows message. |
-| Platform not supported (e.g. Fuchsia) | `UnsupportedError` | Names the platform. |
-| No `ubrk_open[_NN]` symbol in the library | `UnsupportedError` | Describes the renaming issue. |
-| ICU `UErrorCode > 0` from `ubrk_open` | `StateError` | Includes the function name and numeric error code. |
-| `IcuTokenizer()` called on web | `UnsupportedError` | Directs user to `BrowserTokenizer`. |
-| `BrowserTokenizer()` called on native | `UnsupportedError` | Directs user to `IcuTokenizer` or `RegExpTokenizer`. |
+| Condition                                 | Thrown type        | Message                                                      |
+| ----------------------------------------- | ------------------ | ------------------------------------------------------------ |
+| No ICU library found on Linux             | `UnsupportedError` | Includes the package name to install (`libicu-dev` / `icu`). |
+| No ICU DLL found on Windows               | `UnsupportedError` | Generic Windows message.                                     |
+| Platform not supported (e.g. Fuchsia)     | `UnsupportedError` | Names the platform.                                          |
+| No `ubrk_open[_NN]` symbol in the library | `UnsupportedError` | Describes the renaming issue.                                |
+| ICU `UErrorCode > 0` from `ubrk_open`     | `StateError`       | Includes the function name and numeric error code.           |
+| `IcuTokenizer()` called on web            | `UnsupportedError` | Directs user to `BrowserTokenizer`.                          |
+| `BrowserTokenizer()` called on native     | `UnsupportedError` | Directs user to `IcuTokenizer` or `RegExpTokenizer`.         |
 
 ICU warning codes (`UErrorCode < 0`, e.g. `U_USING_DEFAULT_WARNING = -127`) are
 non-fatal and are silently ignored by `_checkStatus`.
@@ -555,11 +554,11 @@ Providing no text also exits with code 1.
 
 # Dependencies
 
-| Package | Type | Purpose |
-|---|---|---|
-| `ffi: ^2.2.0` | Runtime | Provides `calloc`, `Pointer`, `Utf8`, and related types for the ICU FFI bindings. Not used on web. |
-| `lints: ^6.0.0` | Dev | Dart recommended lint rules, enforced by `dart analyze`. |
-| `test: ^1.25.6` | Dev | Test runner for all unit and browser tests. |
+| Package         | Type    | Purpose                                                                                            |
+| --------------- | ------- | -------------------------------------------------------------------------------------------------- |
+| `ffi: ^2.2.0`   | Runtime | Provides `calloc`, `Pointer`, `Utf8`, and related types for the ICU FFI bindings. Not used on web. |
+| `lints: ^6.0.0` | Dev     | Dart recommended lint rules, enforced by `dart analyze`.                                           |
+| `test: ^1.25.6` | Dev     | Test runner for all unit and browser tests.                                                        |
 
 The `ffi` package is the only runtime dependency. On web targets, the Dart
 compiler tree-shakes the `dart:ffi`-using code because it is gated behind the
